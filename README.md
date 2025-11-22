@@ -1,191 +1,207 @@
-# Debian Network Reinstall Script
+<div lang="zh-CN">
 
-- <span lang="zh-CN">[中文版在这里](./README.zh-CN.md)</span>
-- <span lang="ja-JP">[日本語はこちら](./README.ja-JP.md)</span>
+# Debian 网络重装脚本
 
-## What is this?
+## 这是什么？
 
-A script that reinstalls any VPS or physical machine to minimal Debian via network boot. Works by injecting the Debian installer into GRUB and automatically configuring the installation process.
+一个通过网络启动（network boot）方式，将任何 VPS 或物理机重装为最小化 Debian 系统的脚本。其工作原理是将 Debian 安装程序注入到 GRUB 中，并自动完成安装过程的配置。
 
-**Perfect for:**
-- Converting Oracle Cloud's Ubuntu images to Debian
-- Removing cloud provider surveillance agents 
-- Creating minimal, clean Debian environments
-- Automating installations with preseed/cloud-init
-- Rescuing broken systems
+**非常适合以下场景：**
 
-## Quick Start
+  - 将 Oracle Cloud 的 Ubuntu 镜像更换为 Debian
+  - 移除云服务商内置的监控代理
+  - 创建最小、纯净的 Debian 环境
+  - 使用 preseed 或 cloud-init 实现自动化安装
+  - 拯救或恢复损坏的系统
+
+## 快速上手
 
 ```bash
-# Download the script
+# 下载脚本
 curl -fLO https://raw.githubusercontent.com/bohanyang/debi/master/debi.sh
 chmod +x debi.sh
 
-# Basic installation (creates user 'debian' with sudo access)
+# 基础安装 (会创建一个拥有 sudo 权限的 'debian' 用户)
 sudo ./debi.sh
 
-# Or install as root user instead
+# 或者，直接以 root 用户安装
 sudo ./debi.sh --user root
 
-# Reboot when ready
+# 准备就绪后重启
 sudo reboot
 ```
 
-**Default settings:** Debian 13 (trixie), DHCP networking, user `debian` with sudo access, you'll be prompted for password.
+**默认设置：** Debian 13 (trixie)，DHCP 网络，创建一个名为 `debian` 并拥有 sudo 权限的用户，脚本会提示你为该用户设置密码。
 
-## Platform Support
+## 平台支持
 
-| Platform | Status | Notes |
-|----------|---------|-------|
-| ✅ **KVM/Physical** | Full support | All features work |
-| ✅ **Most VPS** | Full support | DigitalOcean, Vultr, Linode, etc. |
-| ⚠️ **Google Cloud** | Requires manual network | Must use `--ip`, `--gateway` (DHCP broken) |
-| ⚠️ **AWS EC2** | BIOS only | UEFI boot not yet supported |
-| ❌ **Containers** | Not supported | Requires GRUB bootloader |
+| 平台 | 状态 | 备注 |
+| :--- | :--- | :--- |
+| ✅ **KVM/物理机** | 完全支持 | 所有功能均可正常工作 |
+| ✅ **大多数 VPS** | 完全支持 | DigitalOcean, Vultr, Linode 等 |
+| ⚠️ **Google Cloud** | 需要手动配置网络 | 必须使用 `--ip` 和 `--gateway` (DHCP 工作不正常) |
+| ⚠️ **AWS EC2** | 仅支持 BIOS | 尚不支持 UEFI 启动模式 |
+| ❌ **容器** | 不支持 | 需要 GRUB 引导加载程序 |
 
-**Requirements:**
-- KVM or physical machine (not containers)
-- GRUB 2 bootloader
-- Root access
+**环境要求：**
 
-## Regional Presets
+  - KVM 虚拟化或物理机 (不支持容器)
+  - GRUB 2 引导加载程序
+  - Root 权限
 
-| Preset | Mirror | DNS | NTP | Best for |
-|--------|---------|-----|-----|----------|
-| *Default* | deb.debian.org | Google DNS | time.google.com | Global |
-| `--cloudflare` | deb.debian.org | Cloudflare | time.cloudflare.com | Global (privacy) |
-| `--aws` | cdn-aws.deb.debian.org | Google DNS | time.aws.com | AWS instances |
-| `--aliyun` | mirrors.aliyun.com | AliDNS | time.amazonaws.cn | China |
-| `--ustc` | mirrors.ustc.edu.cn | DNSPod | time.amazonaws.cn | China |
-| `--tuna` | mirrors.tuna.tsinghua.edu.cn | DNSPod | time.amazonaws.cn | China |
+## 区域预设
 
-## Complete Options Reference
+| 预设 | 镜像源 | DNS | NTP | 适用场景 |
+| :--- | :--- | :--- | :--- | :--- |
+| *默认* | deb.debian.org | Google DNS | time.google.com | 全球通用 |
+| `--cloudflare` | deb.debian.org | Cloudflare | time.cloudflare.com | 全球通用 (注重隐私) |
+| `--aws` | cdn-aws.deb.debian.org | Google DNS | time.aws.com | AWS 实例 |
+| `--aliyun` | mirrors.aliyun.com | AliDNS | time.amazonaws.cn | 中国大陆 |
+| `--ustc` | mirrors.ustc.edu.cn | DNSPod | time.amazonaws.cn | 中国大陆 |
+| `--tuna` | mirrors.tuna.tsinghua.edu.cn | DNSPod | time.amazonaws.cn | 中国大陆 |
 
-### System & User Configuration
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--version 13` | `13` | Debian version: `10`, `11`, `12`, `13`, `14` |
-| `--suite trixie` | `trixie` | Debian suite: `stable`, `testing`, `sid`, etc. |
-| `--user debian` | `debian` | Username (use `root` for root-only) |
-| `--password PASSWORD` | *prompt* | User password (prompted if not specified) |
-| `--authorized-keys-url URL` | *password auth* | SSH keys from URL (e.g., `https://github.com/user.keys`) |
-| `--no-account-setup` | *create user* | Skip user creation (manual setup via console) |
-| `--sudo-with-password` | *no password* | Require password for sudo commands |
-| `--timezone UTC` | `UTC` | System timezone (e.g., `Asia/Shanghai`) |
-| `--hostname NAME` | *current* | System hostname |
+## 完整选项参考
 
-### Network Configuration
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--interface auto` | `auto` | Network interface (e.g., `eth0`, `eth1`) |
-| `--ip ADDRESS` | *DHCP* | Static IP: `10.0.0.100`, `1.2.3.4/24`, `2001:db8::1/64` |
-| `--static-ipv4` | *DHCP* | Use current IPv4 settings automatically |
-| `--netmask MASK` | *auto* | Network mask: `255.255.255.0`, `ffff:ffff:ffff:ffff::` |
-| `--gateway ADDRESS` | *auto* | Gateway IP (use `none` for no gateway) |
-| `--dns '8.8.8.8 8.8.4.4'` | `1.1.1.1 1.0.0.1` | DNS servers for IPv4 |
-| `--dns6 '2001:4860:4860::8888'` | `2606:4700:4700::1111` | DNS servers for IPv6 |
-| `--ethx` | *consistent naming* | Use `eth0`/`eth1` instead of `enp0s3` style |
-| `--ntp time.google.com` | `time.google.com` | NTP server |
+### 系统和用户配置
 
-### Network Console (Remote Installation)
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--network-console` | *disabled* | Enable SSH access during installation |
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--version 13` | `13` | Debian 版本：`10`, `11`, `12`, `13`, `14` |
+| `--suite trixie` | `trixie` | Debian 发行代号：`stable`, `testing`, `sid` 等 |
+| `--user debian` | `debian` | 用户名 (使用 `root` 则只创建 root 用户) |
+| `--password PASSWORD` | *交互式提示* | 用户密码 (如果未指定，则会提示输入) |
+| `--authorized-keys-url URL` | *密码认证* | 从 URL 加载 SSH 公钥 (例如 `https://github.com/user.keys`) |
+| `--no-account-setup` | *创建用户* | 跳过用户创建步骤 (需要通过控制台手动设置) |
+| `--sudo-with-password` | *无需密码* | 执行 sudo 命令时需要输入密码 |
+| `--timezone UTC` | `UTC` | 系统时区 (例如 `Asia/Shanghai`) |
+| `--hostname NAME` | *当前主机名* | 系统主机名 |
 
-**Network Console Usage:**
-1. Enable with `--network-console` and reboot
-2. Wait 2-3 minutes for Debian installer to load components
-3. SSH to your server: `ssh installer@YOUR_IP`
-4. Use multiple terminals:
-   - **Alt+F1**: Main installer interface
-   - **Alt+F2**: Shell access
-   - **Alt+F3**: Additional shell
-   - **Alt+F4**: System logs (monitor automated installation progress)
-   - Navigate with Alt+Left/Alt+Right
+### 网络配置
 
-> [!IMPORTANT]  
-> If `--authorized-keys-url` is used, SSH password authentication is disabled (SSH keys required), **but you still need to set a user password for VNC console and sudo access.**
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--interface auto` | `auto` | 网络接口 (例如 `eth0`, `eth1`) |
+| `--ip ADDRESS` | *DHCP* | 静态 IP：`10.0.0.100`, `1.2.3.4/24`, `2001:db8::1/64` |
+| `--static-ipv4` | *DHCP* | 自动使用当前系统的 IPv4 设置 |
+| `--netmask MASK` | *自动* | 子网掩码：`255.255.255.0`, `ffff:ffff:ffff:ffff::` |
+| `--gateway ADDRESS` | *自动* | 网关 IP (使用 `none` 表示无网关) |
+| `--dns '8.8.8.8 8.8.4.4'` | `1.1.1.1 1.0.0.1` | IPv4 的 DNS 服务器 |
+| `--dns6 '2001:4860:4860::8888'` | `2606:4700:4700::1111` | IPv6 的 DNS 服务器 |
+| `--ethx` | *一致性命名* | 使用 `eth0`/`eth1` 风格的网卡名，而不是 `enp0s3` |
+| `--ntp time.google.com` | `time.google.com` | NTP 时间服务器 |
 
-### Storage & Partitioning
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--disk /dev/sda` | *auto-detect* | Target disk (**required** if multiple disks) |
-| `--no-disk-partitioning` | *auto partition* | Manual partitioning via console |
-| `--filesystem ext4` | `ext4` | Root filesystem type |
-| `--force-gpt` | *enabled* | Create GPT partition table |
-| `--no-force-gpt` | *use GPT* | Use MBR partition table instead |
-| `--bios` | *auto-detect* | Force BIOS boot (creates BIOS boot partition) |
-| `--efi` | *auto-detect* | Force EFI boot (creates EFI system partition) |
-| `--esp 106` | `106` | EFI system partition size (106=100MB, 538=512MB, 1075=1GB) |
+### 网络控制台 (远程安装)
 
-### Mirror & Repository Configuration
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--mirror-protocol https` | `https` | Mirror protocol: `http`, `https`, `ftp` |
-| `--https` | *enabled* | Alias for `--mirror-protocol https` |
-| `--mirror-host deb.debian.org` | `deb.debian.org` | Mirror hostname |
-| `--mirror-directory /debian` | `/debian` | Mirror directory path |
-| `--mirror-proxy URL` | *none* | HTTP proxy for downloads and APT |
-| `--reuse-proxy` | *none* | Use existing `http_proxy` environment variable |
-| `--security-repository URL` | *auto* | Security updates repo (use `mirror` for main mirror) |
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--network-console` | *禁用* | 在安装过程中启用 SSH 访问 |
 
-### APT Repository Components
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--apt-non-free-firmware` | *enabled* | Include non-free firmware (Debian 12+) |
-| `--apt-non-free` | *disabled* | Enable non-free repository |
-| `--apt-contrib` | *disabled* | Enable contrib repository |
-| `--apt-src` | *enabled* | Enable source repositories |
-| `--apt-backports` | *enabled* | Enable backports repository |
-| `--no-apt-non-free-firmware` | *use default* | Disable non-free firmware |
-| `--no-apt-non-free` | *use default* | Disable non-free |
-| `--no-apt-contrib` | *use default* | Disable contrib |
-| `--no-apt-src` | *use default* | Disable source repositories |
-| `--no-apt-backports` | *use default* | Disable backports |
+**网络控制台用法：**
 
-### Package Installation
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--install 'pkg1 pkg2'` | *minimal* | Additional packages (space-separated, quoted) |
-| `--install-recommends` | *enabled* | Install recommended packages |
-| `--no-install-recommends` | *install recommends* | Skip recommended packages |
-| `--upgrade safe-upgrade` | `safe-upgrade` | Package upgrade mode |
-| `--safe-upgrade` | *default* | Safe package upgrades during install |
-| `--full-upgrade` | *safe upgrade* | Full system upgrade (`dist-upgrade`) |
-| `--no-upgrade` | *safe upgrade* | Skip package upgrades entirely |
+1.  使用 `--network-console` 参数并重启
+2.  等待 2-3 分钟，让 Debian 安装程序加载组件
+3.  通过 SSH 连接到你的服务器：`ssh installer@YOUR_IP`
+4.  使用多个终端窗口进行操作：
+      - **Alt+F1**: 主安装界面
+      - **Alt+F2**: Shell 终端
+      - **Alt+F3**: 另一个 Shell 终端
+      - **Alt+F4**: 系统日志 (可监控自动化安装进度)
+      - 使用 Alt+Left/Alt+Right 切换
 
-### Kernel Options
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--kernel PACKAGE` | `linux-image-ARCH` | Kernel package name |
-| `--cloud-kernel` | *standard* | Use cloud-optimized kernel |
-| `--bpo-kernel` | *stable* | Use newer kernel from backports |
-| `--firmware` | *auto-detect* | Include non-free firmware for hardware |
 
-### Advanced Options
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--ssh-port 2222` | `22` | Custom SSH port |
-| `--bbr` | *disabled* | Enable TCP BBR congestion control |
-| `--architecture amd64` | *auto-detect* | Target architecture: `amd64`, `arm64`, `i386`, etc. |
-| `--force-lowmem 1` | *auto* | Force low memory mode: `0`, `1`, `2` (for <512MB RAM) |
-| `--no-force-efi-extra-removable` | *enabled* | Disable EFI extra removable media path |
-| `--grub-timeout 5` | `5` | GRUB menu timeout in seconds |
+**⚠️ 注意事项**
 
-### Debian Installer Options
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--release-d-i` | *auto* | Use release version of debian-installer |
-| `--daily-d-i` | *auto* | Use daily build of debian-installer |
+如果使用了 `--authorized-keys-url`，SSH 的密码认证将被禁用 (必须使用 SSH 密钥登录)，**但你仍然需要设置一个用户密码**，用于 VNC 控制台登录和执行 sudo 命令。
 
-### Cloud-Init Integration
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--cidata /path/to/dir` | *none* | Custom cloud-init data directory |
+### 存储和分区
 
-**Cloud-Init Usage:**
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--disk /dev/sda` | *自动检测* | 目标磁盘 (**如果有多块磁盘，此项为必填**) |
+| `--no-disk-partitioning` | *自动分区* | 通过控制台手动分区 |
+| `--filesystem ext4` | `ext4` | 根文件系统类型 |
+| `--force-gpt` | *启用* | 创建 GPT 分区表 |
+| `--no-force-gpt` | *使用 GPT* | 使用 MBR 分区表代替 GPT |
+| `--bios` | *自动检测* | 强制使用 BIOS 启动 (会创建 BIOS boot 分区) |
+| `--efi` | *自动检测* | 强制使用 EFI 启动 (会创建 EFI 系统分区) |
+| `--esp 106` | `106` | EFI 系统分区 (ESP) 大小 (106=100MB, 538=512MB, 1075=1GB) |
+
+### 镜像源和仓库配置
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--mirror-protocol https` | `https` | 镜像源协议：`http`, `https`, `ftp` |
+| `--https` | *启用* | `--mirror-protocol https` 的别名 |
+| `--mirror-host deb.debian.org` | `deb.debian.org` | 镜像源主机名 |
+| `--mirror-directory /debian` | `/debian` | 镜像源目录路径 |
+| `--mirror-proxy URL` | *无* | 用于下载和 APT 的 HTTP 代理 |
+| `--reuse-proxy` | *无* | 使用当前环境中的 `http_proxy` 变量 |
+| `--security-repository URL` | *自动* | 安全更新仓库地址 (使用 `mirror` 表示与主镜像源一致) |
+
+### APT 仓库组件
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--apt-non-free-firmware` | *启用* | 包含 non-free-firmware (Debian 12+) |
+| `--apt-non-free` | *禁用* | 启用 non-free 仓库 |
+| `--apt-contrib` | *禁用* | 启用 contrib 仓库 |
+| `--apt-src` | *启用* | 启用源码仓库 |
+| `--apt-backports` | *启用* | 启用 backports 仓库 |
+| `--no-apt-non-free-firmware` | *使用默认值* | 禁用 non-free-firmware |
+| `--no-apt-non-free` | *使用默认值* | 禁用 non-free |
+| `--no-apt-contrib` | *使用默认值* | 禁用 contrib |
+| `--no-apt-src` | *使用默认值* | 禁用源码仓库 |
+| `--no-apt-backports` | *使用默认值* | 禁用 backports |
+
+### 软件包安装
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--install 'pkg1 pkg2'` | *最小化* | 额外安装的软件包 (用空格分隔，并用引号括起来) |
+| `--install-recommends` | *启用* | 安装推荐的软件包 |
+| `--no-install-recommends` | *安装推荐包* | 跳过推荐的软件包 |
+| `--upgrade safe-upgrade` | `safe-upgrade` | 软件包升级模式 |
+| `--safe-upgrade` | *默认* | 在安装过程中执行安全的软件包升级 |
+| `--full-upgrade` | *安全升级* | 执行完整的系统升级 (`dist-upgrade`) |
+| `--no-upgrade` | *安全升级* | 完全跳过软件包升级 |
+
+### 内核选项
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--kernel PACKAGE` | `linux-image-ARCH` | 内核软件包名称 |
+| `--cloud-kernel` | *标准内核* | 使用为云环境优化的内核 |
+| `--bpo-kernel` | *稳定版内核* | 使用来自 backports 的较新内核 |
+| `--firmware` | *自动检测* | 为硬件安装 non-free 固件 |
+
+### 高级选项
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--ssh-port 2222` | `22` | 自定义 SSH 端口 |
+| `--bbr` | *禁用* | 启用 TCP BBR 拥塞控制算法 |
+| `--architecture amd64` | *自动检测* | 目标系统架构：`amd64`, `arm64`, `i386` 等 |
+| `--force-lowmem 1` | *自动* | 强制开启低内存模式：`0`, `1`, `2` (适用于内存 \<512MB 的机器) |
+| `--no-force-efi-extra-removable` | *启用* | 禁用 EFI 的 extra removable media 路径 |
+| `--grub-timeout 5` | `5` | GRUB 菜单等待超时时间 (秒) |
+
+### Debian 安装程序选项
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--release-d-i` | *自动* | 使用发布版的 debian-installer |
+| `--daily-d-i` | *自动* | 使用每日构建版的 debian-installer |
+
+### Cloud-Init 集成
+
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--cidata /path/to/dir` | *无* | 自定义 cloud-init 数据目录 |
+
+**Cloud-Init 用法：**
+
 ```bash
-# Create cloud-init configuration
+# 创建 cloud-init 配置文件
 mkdir my-cloud-config
 echo "instance-id: my-server" > my-cloud-config/meta-data
 cat > my-cloud-config/user-data << 'EOF'
@@ -196,53 +212,61 @@ packages:
   - git
 EOF
 
-# Use with installation
+# 在安装时使用
 sudo ./debi.sh --cidata my-cloud-config
 ```
 
-### Development & Testing
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--dry-run` | *execute* | Generate configuration without installing |
-| `--hold` | *reboot* | Don't reboot after installation |
-| `--power-off` | *reboot* | Power off instead of reboot |
+### 开发与测试
 
-## Examples
+| 选项 | 默认值 | 描述 |
+| :--- | :--- | :--- |
+| `--dry-run` | *执行* | 只生成配置文件，不执行安装 |
+| `--hold` | *重启* | 安装后不重启 |
+| `--power-off` | *重启* | 安装后关机而不是重启 |
+
+## 使用示例
 
 ### Oracle Cloud (Ubuntu → Debian)
+
 ```bash
 sudo ./debi.sh --cloudflare --user debian
 ```
 
 ### Google Cloud Platform
+
 ```bash
-# GCP requires manual network (replace with your VPC settings)
+# GCP 需要手动配置网络 (请替换为你的 VPC 设置)
 sudo ./debi.sh --ip 10.128.0.100/24 --gateway 10.128.0.1
 ```
 
-### Minimal Installation
+### 最小化安装
+
 ```bash
 sudo ./debi.sh --no-install-recommends --install 'curl git vim' --no-upgrade
 ```
 
-### China Deployment
+### 中国大陆部署
+
 ```bash
 sudo ./debi.sh --ustc --timezone Asia/Shanghai --dns '119.29.29.29'
 ```
 
-### Network Console Installation
+### 使用网络控制台安装
+
 ```bash
-# Enable remote access during install (SSH keys for network, password still needed for VNC/sudo)
+# 在安装过程中启用远程访问 (SSH 密钥用于网络登录，密码仍需用于 VNC/sudo)
 sudo ./debi.sh --network-console --authorized-keys-url https://github.com/yourusername.keys
-# After reboot, SSH: ssh installer@YOUR_IP
+# 重启后，通过 SSH 连接: ssh installer@YOUR_IP
 ```
 
-### Static Network with Cloud-Init
+### 静态网络与 Cloud-Init
+
 ```bash
 sudo ./debi.sh --ip 192.168.1.100/24 --gateway 192.168.1.1 --cidata ./cloud-config/
 ```
 
-### Advanced Custom Configuration
+### 高级自定义配置
+
 ```bash
 sudo ./debi.sh \
   --version 13 \
@@ -256,68 +280,77 @@ sudo ./debi.sh \
   --install 'htop iotop ncdu'
 ```
 
-## Troubleshooting
+## 故障排查
 
-### Revert All Changes
+### 撤销所有更改
+
 ```bash
-# Remove all modifications and restore original GRUB
+# 移除所有修改并恢复原始的 GRUB 配置
 sudo rm -rf /etc/default/grub.d/zz-debi.cfg /boot/debian-*
 sudo update-grub || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 ```
 
-### Common Issues
+### 常见问题
 
-**Multiple disks detected:**
+**检测到多块磁盘：**
+
 ```bash
-# List available disks
+# 列出可用磁盘
 lsblk
-# Specify target disk
+# 指定目标磁盘
 sudo ./debi.sh --disk /dev/sda
 ```
 
-**Low memory VPS (<512MB):**
+**低内存 VPS (\<512MB)：**
+
 ```bash
 sudo ./debi.sh --force-lowmem 1
 ```
 
-**Network configuration fails:**
+**网络配置失败：**
+
 ```bash
-# Use current network settings
+# 使用当前系统的网络设置
 sudo ./debi.sh --static-ipv4
 
-# Or configure manually
+# 或者手动配置
 sudo ./debi.sh --ip YOUR_IP/CIDR --gateway YOUR_GATEWAY
 ```
 
-**Need firmware for network card:**
+**网卡需要固件 (firmware)：**
+
 ```bash
 sudo ./debi.sh --firmware
 ```
 
-**Installation debugging:**
+**安装过程调试：**
+
 ```bash
-# Generate preseed file only
+# 只生成 preseed 文件
 sudo ./debi.sh --dry-run
 
-# Enable network console for remote access (SSH keys for remote, password for VNC/sudo)
+# 启用网络控制台进行远程访问 (SSH 密钥用于远程登录，密码用于 VNC/sudo)
 sudo ./debi.sh --network-console --authorized-keys-url YOUR_KEYS_URL
 ```
 
-## How It Works
+## 工作原理
 
-1. **Downloads Debian installer** to `/boot/debian-$VERSION/`
-2. **Generates preseed file** with your configuration
-3. **Modifies GRUB configuration** (adds installer menu entry)
-4. **Injects configuration** into installer initramfs
-5. **Updates GRUB** to include new boot option
+1.  **下载 Debian 安装程序** 到 `/boot/debian-$VERSION/` 目录
+2.  根据你的配置**生成 preseed 应答文件**
+3.  **修改 GRUB 配置** (添加一个新的安装程序菜单项)
+4.  将配置文件**注入到安装程序的 initramfs** 中
+5.  **更新 GRUB** 以加载新的启动选项
 
-**Changes made to your system:**
-- Files added to `/boot/debian-*/`
-- GRUB configuration in `/etc/default/grub.d/zz-debi.cfg`
-- Updated GRUB menu
+**对你系统所做的更改：**
 
-**These changes are safe and reversible** before reboot using the revert command above.
+  - 在 `/boot/debian-*/` 目录中添加文件
+  - 在 `/etc/default/grub.d/zz-debi.cfg` 创建 GRUB 配置文件
+  - 更新 GRUB 菜单
 
----
+**在重启之前，所有这些更改都是安全且可逆的**，可以使用上面的撤销命令来恢复。
 
-*Created by [@bohanyang](https://github.com/bohanyang) • [Issues](https://github.com/bohanyang/debi/issues) • [GitHub](https://github.com/bohanyang/debi)*
+-----
+
+*作者 [@bohanyang](https://github.com/bohanyang) • [问题反馈](https://github.com/bohanyang/debi/issues) • [GitHub 仓库](https://github.com/bohanyang/debi)*
+
+</div>
