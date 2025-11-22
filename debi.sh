@@ -295,15 +295,21 @@ while [ $# -gt 0 ]; do
             ntp=time.amazonaws.cn
             ;;
         --ustc|--china)
-            dns='119.29.29.29'
-            dns6='2402:4e00::'
+            dns='223.5.5.5 223.6.6.6'
+            dns6='2400:3200::1 2400:3200:baba::1'
             mirror_host=mirrors.ustc.edu.cn
             ntp=time.amazonaws.cn
             ;;
         --tuna)
-            dns='119.29.29.29'
-            dns6='2402:4e00::'
+            dns='223.5.5.5 223.6.6.6'
+            dns6='2400:3200::1 2400:3200:baba::1'
             mirror_host=mirrors.tuna.tsinghua.edu.cn
+            ntp=time.amazonaws.cn
+            ;;
+        --debian-sg)
+            dns='8.8.8.8 8.8.4.4'
+            dns6='2001:4860:4860::8888 2001:4860:4860::8844'
+            mirror_host=ftp.sg.debian.org
             ntp=time.amazonaws.cn
             ;;
         --static-ipv4)
