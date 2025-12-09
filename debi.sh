@@ -300,12 +300,6 @@ while [ $# -gt 0 ]; do
             mirror_host=mirrors.ustc.edu.cn
             ntp=time.amazonaws.cn
             ;;
-        --tuna)
-            dns='223.5.5.5 223.6.6.6'
-            dns6='2400:3200::1 2400:3200:baba::1'
-            mirror_host=mirrors.tuna.tsinghua.edu.cn
-            ntp=time.amazonaws.cn
-            ;;
         --debian-sg)
             dns='8.8.8.8 8.8.4.4'
             dns6='2001:4860:4860::8888 2001:4860:4860::8844'
